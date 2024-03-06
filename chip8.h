@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <math.h>
 
 #include <SDL2/SDL.h>
 
@@ -19,7 +20,7 @@ typedef struct {
 	uint8_t delay;
 	uint8_t sound;
 	uint8_t memory[4096];
-	uint_16_t stack[16];
+	uint16_t stack[16];
 } Chip8;
 
 typedef struct {
@@ -35,7 +36,7 @@ typedef struct {
 } sdl_t;
 
 int init_sdl(sdl_t *sdl);
-void init_cpu(Chip8 *cpu);
+void init_cpu(Chip8 *cpu, const char *file_name);
 void load_font_into_memory(Chip8 *cpu);
 void init_pixels(sdl_t *sdl);
 void draw_rectangles(sdl_t *sdl);

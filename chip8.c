@@ -8,6 +8,7 @@
 #include "instructions.h"
 #include "chip8.h"
 #include "peripherals.h"
+// #include "disassembler.h"
 
 int init_sdl(sdl_t *sdl) {
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -31,13 +32,31 @@ int init_sdl(sdl_t *sdl) {
 	return EXIT_SUCCESS;
 }
 
-void init_cpu(Chip8 *cpu) {
+void init_cpu(Chip8 *cpu, const char *file_name) {
 	load_font_into_memory(cpu);
-	// load_game_into_memory(cpu);
+	load_game_into_memory(cpu, file_name);
 	
 	cpu->SP = -1;
 	cpu->PC = 0x200;
 }
+
+void load_game_into_memory(Chip8 *cpu, const char *file_name) {
+	FILE *file = fopen(file_name, "rb");
+	if (file == NULL) {
+		printf("Opening file error\n");
+		return;
+	}
+
+	int byte;
+	int index = 0;
+	while ((byte = fgetc(file)) != EOF) {
+		cpu->memory[0x200 + index] = byte;
+		index++;
+	}
+
+	fclose(file);
+}
+
 
 void load_font_into_memory(Chip8 *cpu) {
 	uint8_t start_address = 0x050;
@@ -71,8 +90,7 @@ void init_pixels(sdl_t *sdl) {
 			sdl->display[y][x].rect.y = y * PIX_HEIGHT;
 			sdl->display[y][x].rect.w = PIX_WIDTH;
 			sdl->display[y][x].rect.h = PIX_HEIGHT;
-			sdl->display[y][x].active = active;
-			active = !active;
+			sdl->display[y][x].active = false;
 	    }
 	}
 }
@@ -125,11 +143,80 @@ uint16_t fetch(Chip8 *cpu) {
 	return instr;
 }
 
+void decode_execute(Chip8 *cpu, sdl_t *sdl, uint16_t instr) {
+	uint8_t first_nib =  (instr >> 4) & 0x0F;
+	uint8_t second_nib = (instr >> 2) & 0x03;
+	uint8_t third_nib =  (instr >> 1) & 0x01;
+	uint8_t fourth_nib = (instr >> 0) & 0x0F;
+
+	uint16_t val234nib = (second_nib << 8) | (third_nib << 4) | fourth_nib;
+	uint8_t val34nib = (third_nib << 4) | fourth_nib;
+
+	switch (first_nib) {
+		case 0x0:
+			switch (fourth_nib) {
+				case 0x0: disp_clear(sdl); break;
+				case 0xE: return_from_sub(cpu); break;
+			}
+		case 0x1: jump_addr(cpu, val234nib); break;
+		case 0x2: call(cpu, val234nib); break;
+		case 0x3: skip_eq(cpu, second_nib, val34nib); break;
+		case 0x4: skip_nq(cpu, second_nib, val34nib); break;
+		case 0x5: skip_reg_eq(cpu, second_nib, third_nib); break;
+		case 0x6: set_reg(cpu, second_nib, val34nib); break;
+		case 0x7: add_val_to_reg(cpu, second_nib, val34nib); break;
+		case 0x8: {
+			switch (fourth_nib) {
+				case 0x0: set_reg_to_reg(cpu, second_nib, third_nib); break;
+				case 0x1: set_reg_to_reg_OR(cpu, second_nib, third_nib); break;
+				case 0x2: set_reg_to_reg_AND(cpu, second_nib, third_nib); break;
+				case 0x3: set_reg_to_reg_XOR(cpu, second_nib, third_nib); break;
+				case 0x4: add_reg_to_reg(cpu, second_nib, third_nib); break;
+				case 0x5: sub_reg_from_reg(cpu, second_nib, third_nib); break;
+				case 0x6: r_shift_reg(cpu, second_nib); break;
+				case 0x7: diff_reg(cpu, second_nib, third_nib); break;
+				case 0xE: l_shift_reg(cpu, second_nib); break;
+			}
+		}
+		case 0x9: skip_reg_nq(cpu, second_nib, third_nib); break;
+		case 0xA: set_i(cpu, val234nib); break;
+		case 0xB: jump_pc(cpu, val234nib); break;
+		case 0xC: set_reg_rand(cpu, second_nib, val34nib); break;
+		case 0xD: draw_sprite(sdl, cpu, second_nib, third_nib, fourth_nib); break;
+		case 0xE: {
+			switch (fourth_nib) {
+				case 0xE: skip_if_pressed(sdl, cpu, second_nib); break;
+				case 0x1: skip_if_not_pressed(sdl, cpu, second_nib); break;
+			}
+		}
+		case 0xF: {
+			switch (fourth_nib) {
+				case 0x7: set_reg_to_delay(cpu, second_nib); break;
+				case 0xA: store_key_in_reg(sdl, cpu, second_nib); break;
+				case 0x8: set_sound(cpu, second_nib); break;
+				case 0xE: add_i(cpu, second_nib); break;
+				case 0x9: set_i_to_sprite_location(cpu, second_nib); break;
+				case 0x3: bcd(cpu, second_nib); break;
+				case 0x5: {
+					switch(third_nib) {
+						case 0x1: set_delay(cpu, second_nib); break;
+						case 0x5: reg_dump(cpu, second_nib); break;
+						case 0x6: reg_load(cpu, second_nib); break;
+					}
+				}
+				default: printf("UNKNOWN COMMAND"); break;
+			}
+		}
+	}
+}
+
 int main(int argc, char *argv[]) {
 	Chip8 cpu;
 	sdl_t sdl;
 
-	init_cpu(&cpu);
+	const char* file_name = argv[1];
+
+	init_cpu(&cpu, file_name);
 	init_sdl(&sdl);
 	init_pixels(&sdl);
 
@@ -138,8 +225,7 @@ int main(int argc, char *argv[]) {
 	while (!quit) {
 
 		uint16_t instr = fetch(&cpu);
-		// decode
-		// execute
+		decode_execute(&cpu, &sdl, instr);
 
 		draw_graphics(&sdl);
 

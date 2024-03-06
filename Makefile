@@ -1,4 +1,6 @@
+LDLIBS = -lm
+
 all:
-	gcc -o chip8 chip8.c -Wall -Wextra -lSDL2
+	gcc chip8.c instructions.c peripherals.c -o chip8 -Wall -Wextra -lSDL2 $(LDLIBS)
 dis:
 	cc -o disassembler disassembler.c

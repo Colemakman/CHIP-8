@@ -19,7 +19,7 @@ void return_from_sub(Chip8 *cpu) {
 	cpu->SP -= 1;
 }
 
-void goto(Chip8 *cpu, uint16_t addr) {
+void jump_addr(Chip8 *cpu, uint16_t addr) {
 	cpu->PC = addr;
 }
 
@@ -41,7 +41,7 @@ void skip_nq(Chip8 *cpu, uint8_t reg, uint8_t val) {
 	}
 }
 
-void skip_reg_eq(Chip *cpu, uint8_t regA, uint8_t regB) {
+void skip_reg_eq(Chip8 *cpu, uint8_t regA, uint8_t regB) {
 	if (cpu->V[regA] == cpu->V[regB]) {
 		cpu->PC += 2;
 	}
@@ -85,7 +85,7 @@ void r_shift_reg(Chip8 *cpu, uint8_t reg) {
 }
 
 void diff_reg(Chip8 *cpu, uint8_t regA, uint8_t regB) {
-	cpu->V[regA] = cpu->V[regB] - cpu->[regA];
+	cpu->V[regA] = cpu->V[regB] - cpu->V[regA];
 }
 
 void l_shift_reg(Chip8 *cpu, uint8_t reg) {
@@ -131,7 +131,7 @@ void draw_sprite(sdl_t *sdl, Chip8 *cpu, uint8_t regA, uint8_t regB, uint8_t val
 		sprite_data[i] = cpu->memory[index + i];
 		for (int j = 0; j < 8; j++) {
 			// extract bits from MSB -> LSB using cursed logic
-			bool bit = sprite_data[i] & pow(2, 7 - j);
+			bool bit = sprite_data[i] & (int)pow(2, 7 - j);
 
 			// if bit is on, and pixel is also on set VF to 1
 			if (bit == true && sdl->display[y_loc][x_loc].active == true) {
@@ -160,7 +160,7 @@ void skip_if_pressed(sdl_t *sdl, Chip8 *cpu, uint8_t reg) {
 	}
 }
 
-void skip_if_not_pressed(sdl_t *sdl, chip8 *cpu, uint8_t reg) {
+void skip_if_not_pressed(sdl_t *sdl, Chip8 *cpu, uint8_t reg) {
 	if (sdl->keys[cpu->V[reg]] == false) {
 		cpu->PC += 2;
 	}
@@ -171,9 +171,9 @@ void set_reg_to_delay(Chip8 *cpu, uint8_t reg) {
 }
 
 // this may cause problems.
-void store_key_in_reg(sdl_t *sdl, Chip8 *cpu, uint8_t reg, SDL_Event key) {
+void store_key_in_reg(sdl_t *sdl, Chip8 *cpu, uint8_t reg) {
 	for (int key_index = 0; key_index < 16; key_index++) {
-		if (sdl->key[key_index] == true) {
+		if (sdl->keys[key_index] == true) {
 			cpu->V[0xF] = 0xF & key_index;
 			return;
 		} 
@@ -193,8 +193,7 @@ void add_i(Chip8 *cpu, uint8_t reg) {
 	cpu->I += cpu->V[reg];
 }
 
-void set_i_to_sprite_location(chip8 *cpu, uint8_t reg) {
-	uint8_t sprite_address = 0x050;
+void set_i_to_sprite_location(Chip8 *cpu, uint8_t reg) {
 	uint8_t reg_val = cpu->V[reg];
 
 	cpu->I = 0x050 + reg_val * 5;
