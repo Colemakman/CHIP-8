@@ -2,8 +2,14 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-void DisassembleChip8Op(uint8_t *codebuffer, int pc) {
-	uint8_t *code = &codebuffer[pc];
+void disassemble_chip8_op(uint16_t instr) {
+	uint8_t code[2]; 
+	uint8_t left = (instr >> 8) & 0xFF;
+	uint8_t right = instr & 0xFF;
+
+	code[1] = left;
+	code[0] = right;
+
 	uint8_t firstnib = (code[0] >> 4);
 	// printf("%04x %02x %02x ", pc, code[0], code[1]);
 	
@@ -69,28 +75,28 @@ void DisassembleChip8Op(uint8_t *codebuffer, int pc) {
 	}
 }
 
-int main(int argc, char *argv[]) {
-	FILE *f = fopen(argv[1], "rb");
-	
-	if (f == NULL) {
-		printf("Error: Can't read file %s\n", argv[1]);
-		return EXIT_FAILURE;
-	}
-	
-	fseek(f, 0L, SEEK_END);
-	int file_size = ftell(f);
-	fseek(f, 0L, SEEK_SET);
-
-	unsigned char *buffer = malloc(file_size + 0x200);
-	fread(buffer + 0x200, file_size, 1, f);
-	fclose(f);
-
-	int pc = 0x200;
-	while (pc < (file_size + 0x200)) {
-		DisassembleChip8Op(buffer, pc);
-		pc += 2;
-		printf("\n");
-	}
-	return 0;
-}
+//int main(int argc, char *argv[]) {
+//	FILE *f = fopen(argv[1], "rb");
+//	
+//	if (f == NULL) {
+//		printf("Error: Can't read file %s\n", argv[1]);
+//		return EXIT_FAILURE;
+//	}
+//	
+//	fseek(f, 0L, SEEK_END);
+//	int file_size = ftell(f);
+//	fseek(f, 0L, SEEK_SET);
+//
+//	unsigned char *buffer = malloc(file_size + 0x200);
+//	fread(buffer + 0x200, file_size, 1, f);
+//	fclose(f);
+//
+//	int pc = 0x200;
+//	while (pc < (file_size + 0x200)) {
+//		DisassembleChip8Op(buffer, pc);
+//		pc += 2;
+//		printf("\n");
+//	}
+//	return 0;
+//}
 	

@@ -4,6 +4,7 @@
 
 #include "instructions.h"
 #include "chip8.h"
+#include "disassembler.h"
 
 void disp_clear(sdl_t *sdl) {
 	for (int y = 0; y < 32; y++) {
@@ -108,13 +109,12 @@ void jump_pc(Chip8 *cpu, uint16_t val) {
 }
 
 void set_reg_rand(Chip8 *cpu, uint8_t reg, uint8_t val) {
-	cpu->V[reg] = (rand() & 256) & val;
+	cpu->V[reg] = (uint8_t)((rand() & 256) & val);
 }
 
 void draw_sprite(sdl_t *sdl, Chip8 *cpu, uint8_t regA, uint8_t regB, uint8_t val) {
 
 	// modulo to fix wrapping problems
-	uint8_t x_loc = cpu->V[regA] % 64;
 	uint8_t y_loc = cpu->V[regB] % 32;
 	
 	// set VF to 0
@@ -131,7 +131,7 @@ void draw_sprite(sdl_t *sdl, Chip8 *cpu, uint8_t regA, uint8_t regB, uint8_t val
 		sprite_data[i] = cpu->memory[index + i];
 		for (int j = 0; j < 8; j++) {
 			// extract bits from MSB -> LSB using cursed logic
-			bool bit = sprite_data[i] & (int)pow(2, 7 - j);
+			bool bit = sprite_data[i] & (uint8_t)pow(2, 7 - j);
 
 			// if bit is on, and pixel is also on set VF to 1
 			if (bit == true && sdl->display[y_loc][x_loc].active == true) {
@@ -171,7 +171,7 @@ void set_reg_to_delay(Chip8 *cpu, uint8_t reg) {
 }
 
 // this may cause problems.
-void store_key_in_reg(sdl_t *sdl, Chip8 *cpu, uint8_t reg) {
+void store_key_in_reg(sdl_t *sdl, Chip8 *cpu) {
 	for (int key_index = 0; key_index < 16; key_index++) {
 		if (sdl->keys[key_index] == true) {
 			cpu->V[0xF] = 0xF & key_index;

@@ -3,12 +3,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <ncurses.h>
 #include <SDL2/SDL.h>
 
 #include "instructions.h"
 #include "chip8.h"
 #include "peripherals.h"
-// #include "disassembler.h"
+#include "disassembler.h"
 
 int init_sdl(sdl_t *sdl) {
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -47,12 +48,12 @@ void load_game_into_memory(Chip8 *cpu, const char *file_name) {
 		return;
 	}
 
-	int byte;
-	int index = 0;
-	while ((byte = fgetc(file)) != EOF) {
-		cpu->memory[0x200 + index] = byte;
-		index++;
+	uint16_t addr = 0x200;
+	uint8_t byte;
+	while (fread(&byte, sizeof(uint8_t), 1, file) == 1 && addr < 4096) { 
+		cpu->memory[addr++] = (byte << 4) | (byte >> 4);
 	}
+	print_memory(cpu);
 
 	fclose(file);
 }
@@ -83,7 +84,6 @@ void load_font_into_memory(Chip8 *cpu) {
 }
 
 void init_pixels(sdl_t *sdl) {
-	bool active = true;
 	for (int y = 0; y < 32; y++) {
 		for (int x = 0; x < 64; x++) {
 			sdl->display[y][x].rect.x = x * PIX_WIDTH;
@@ -128,8 +128,13 @@ void final_cleanup(sdl_t sdl) {
 }
 
 void print_memory(Chip8 *cpu) {
-	for (int i = 0; i < 4096; i++) {
-		printf("%04x\n", cpu->memory[i]);
+	bool skip = false;
+	for (int i = 0x200; i < 0x400; i++) {
+		printf("%02x", cpu->memory[i]);
+		if (skip) {
+			printf("\n"); 
+		}
+		skip = !skip;
 	}
 }
 
@@ -137,7 +142,7 @@ uint16_t fetch(Chip8 *cpu) {
 	uint8_t left = cpu->memory[cpu->PC];
 	uint8_t right = cpu->memory[cpu->PC + 1];
 	
-	uint16_t instr = (left << 8) | right;
+	uint16_t instr = (right << 4) | (left >> 4); 
 	cpu->PC += 2;
 
 	return instr;
@@ -152,12 +157,18 @@ void decode_execute(Chip8 *cpu, sdl_t *sdl, uint16_t instr) {
 	uint16_t val234nib = (second_nib << 8) | (third_nib << 4) | fourth_nib;
 	uint8_t val34nib = (third_nib << 4) | fourth_nib;
 
+	if (instr == 0x0000) {
+		return;
+	}
+
 	switch (first_nib) {
 		case 0x0:
 			switch (fourth_nib) {
 				case 0x0: disp_clear(sdl); break;
 				case 0xE: return_from_sub(cpu); break;
+				default: printf("UNKNOWN COMMAND"); break;
 			}
+			break;
 		case 0x1: jump_addr(cpu, val234nib); break;
 		case 0x2: call(cpu, val234nib); break;
 		case 0x3: skip_eq(cpu, second_nib, val34nib); break;
@@ -176,7 +187,9 @@ void decode_execute(Chip8 *cpu, sdl_t *sdl, uint16_t instr) {
 				case 0x6: r_shift_reg(cpu, second_nib); break;
 				case 0x7: diff_reg(cpu, second_nib, third_nib); break;
 				case 0xE: l_shift_reg(cpu, second_nib); break;
+				default: printf("UNKNOWN COMMAND"); break;
 			}
+			break;
 		}
 		case 0x9: skip_reg_nq(cpu, second_nib, third_nib); break;
 		case 0xA: set_i(cpu, val234nib); break;
@@ -187,12 +200,14 @@ void decode_execute(Chip8 *cpu, sdl_t *sdl, uint16_t instr) {
 			switch (fourth_nib) {
 				case 0xE: skip_if_pressed(sdl, cpu, second_nib); break;
 				case 0x1: skip_if_not_pressed(sdl, cpu, second_nib); break;
+				default: printf("UNKNOWN COMMAND"); break;
 			}
+			break;
 		}
 		case 0xF: {
 			switch (fourth_nib) {
 				case 0x7: set_reg_to_delay(cpu, second_nib); break;
-				case 0xA: store_key_in_reg(sdl, cpu, second_nib); break;
+				case 0xA: store_key_in_reg(sdl, cpu); break;
 				case 0x8: set_sound(cpu, second_nib); break;
 				case 0xE: add_i(cpu, second_nib); break;
 				case 0x9: set_i_to_sprite_location(cpu, second_nib); break;
@@ -202,10 +217,14 @@ void decode_execute(Chip8 *cpu, sdl_t *sdl, uint16_t instr) {
 						case 0x1: set_delay(cpu, second_nib); break;
 						case 0x5: reg_dump(cpu, second_nib); break;
 						case 0x6: reg_load(cpu, second_nib); break;
+						default: printf("UNKNOWN COMMAND"); break;
 					}
+					break;
 				}
 				default: printf("UNKNOWN COMMAND"); break;
 			}
+			break;
+		default: printf("UNKNOWN COMMAND"); break;
 		}
 	}
 }
@@ -214,7 +233,17 @@ int main(int argc, char *argv[]) {
 	Chip8 cpu;
 	sdl_t sdl;
 
+	if (argc != 2) {
+		printf("Usage: ./chip8 <FILENAME>");
+		return EXIT_FAILURE;
+	}
+
 	const char* file_name = argv[1];
+
+	initscr();
+	cbreak();
+	noecho();
+	keypad(stdscr, TRUE);
 
 	init_cpu(&cpu, file_name);
 	init_sdl(&sdl);
@@ -246,7 +275,13 @@ int main(int argc, char *argv[]) {
 
 		// 60hz = 16.6666... ms, but SDL_Delay takes uint values only
 		SDL_Delay(17);
+		//disassemble_chip8_op(instr);
+		printw("%04x\n", instr);
+		refresh();
+		getch();
+
 	}
 	
+	endwin();
 	final_cleanup(sdl);
 }

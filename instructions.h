@@ -1,7 +1,8 @@
-#ifndef INSTRUCTIONS_H_
-#define INSTRUCTIONS_H_
+#ifndef INSTRUCTIONS_H
+#define INSTRUCTIONS_H
 
 #include "chip8.h"
+#include "disassembler.h"
 
 void disp_clear(sdl_t *sdl); // 00E0
 void return_from_sub(Chip8 *cpu); // 00EE
@@ -29,7 +30,7 @@ void draw_sprite(sdl_t *sdl, Chip8 *cpu, uint8_t regA, uint8_t regB, uint8_t val
 void skip_if_pressed(sdl_t *sdl, Chip8 *cpu, uint8_t reg); // EX9E
 void skip_if_not_pressed(sdl_t *sdl, Chip8 *cpu, uint8_t reg); // EXA1
 void set_reg_to_delay(Chip8 *cpu, uint8_t reg); // FX07
-void store_key_in_reg(sdl_t *sdl, Chip8 *cpu, uint8_t reg); // FX0A
+void store_key_in_reg(sdl_t *sdl, Chip8 *cpu); // FX0A
 void set_delay(Chip8 *cpu, uint8_t reg); // FX15
 void set_sound(Chip8 *cpu, uint8_t reg); // FX18
 void add_i(Chip8 *cpu, uint8_t reg); // FX1E

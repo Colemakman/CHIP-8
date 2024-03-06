@@ -37,6 +37,7 @@ typedef struct {
 
 int init_sdl(sdl_t *sdl);
 void init_cpu(Chip8 *cpu, const char *file_name);
+void load_game_into_memory(Chip8 *cpu, const char *file_name);
 void load_font_into_memory(Chip8 *cpu);
 void init_pixels(sdl_t *sdl);
 void draw_rectangles(sdl_t *sdl);
