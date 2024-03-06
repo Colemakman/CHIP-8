@@ -1,7 +1,7 @@
 # CHIP-8 Emulator
 
-Emulator Written in C and SDL that runs CHIP-8 games.
-CHIP-8: https://en.wikipedia.org/wiki/CHIP-8
+Emulator Written in C and SDL that runs CHIP-8 games.  
+CHIP-8: https://en.wikipedia.org/wiki/CHIP-8  
 
 ### Installation
 
@@ -11,15 +11,15 @@ CHIP-8: https://en.wikipedia.org/wiki/CHIP-8
 
 ##### Install dependancies
 
-Debian based systems:
+Debian based systems  
 `sudo apt install gcc libsdl2-dev`
 
 ##### Build
 
-Build emulator
+Build emulator  
 `make`
 
-Build disassembler
+Build disassembler  
 `make dis`
 
 ##### Run
