@@ -153,7 +153,8 @@ uint16_t fetch(Chip8 *cpu, bool debug) {
 	uint16_t instr = (left << 8) | right;
 	cpu->PC += 2;
 
-	if (!debug) printf("Instruction: %04x\n", instr);
+	(void)debug;
+	//if (!debug) printf("Instruction: %04x\n", instr);
 	return instr;
 }
 
@@ -163,9 +164,9 @@ void decode_execute(Chip8 *cpu, sdl_t *sdl, uint16_t instr) {
 	uint8_t third_nib =  (instr >>  4) & 0xF;
 	uint8_t fourth_nib = (instr >>  0) & 0xF;
 
-	if (first_nib == 0xD) {
-		printf("Nibs: %x %x %x %x\n", first_nib, second_nib, third_nib, fourth_nib);
-	}
+//	if (first_nib == 0xD) {
+//		printf("Nibs: %x %x %x %x\n", first_nib, second_nib, third_nib, fourth_nib);
+//	}
 
 	uint16_t val234nib = (second_nib << 8) | (third_nib << 4) | fourth_nib;
 	uint8_t val34nib = (third_nib << 4) | fourth_nib;

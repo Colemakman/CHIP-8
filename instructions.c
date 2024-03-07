@@ -135,6 +135,7 @@ void draw_sprite(sdl_t *sdl, Chip8 *cpu, uint8_t regA, uint8_t regB, uint8_t val
 			// if bit is on, and pixel is also on set VF to 1
 			if (bit == true && sdl->display[y_loc][x_loc].active == true) {
 				cpu->V[0xE] = 1;
+				sdl->display[y_loc][x_loc].active = false;
 
 			// if bit is on bit pixel is not, turn pixel on
 			} else if (bit == true && sdl->display[y_loc][x_loc].active == false) {
