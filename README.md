@@ -3,6 +3,8 @@
 Emulator Written in C and SDL that runs CHIP-8 games.  
 CHIP-8: https://en.wikipedia.org/wiki/CHIP-8  
 
+Run with `-d` or `--debug` flags to view registers and iterate instructions one by one. 
+
 ### Installation
 
 ## Linux
