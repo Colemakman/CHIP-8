@@ -81,7 +81,7 @@ void sub_reg_from_reg(Chip8 *cpu, uint8_t regA, uint8_t regB) {
 }
 
 void r_shift_reg(Chip8 *cpu, uint8_t reg) {
-	cpu->V[0xE] = cpu->V[reg] & 0x1;
+	cpu->V[0xF] = cpu->V[reg] & 0x1;
 	cpu->V[reg] >>= 1;
 }
 
@@ -90,7 +90,7 @@ void diff_reg(Chip8 *cpu, uint8_t regA, uint8_t regB) {
 }
 
 void l_shift_reg(Chip8 *cpu, uint8_t reg) {
-	cpu->V[0xE] = cpu->V[reg] & 0x80;
+	cpu->V[0xF] = cpu->V[reg] & 0x80;
 	cpu->V[reg] <<= 1;
 }
 
@@ -109,7 +109,7 @@ void jump_pc(Chip8 *cpu, uint16_t val) {
 }
 
 void set_reg_rand(Chip8 *cpu, uint8_t reg, uint8_t val) {
-	cpu->V[reg] = (uint8_t)((rand() & 256) & val);
+	cpu->V[reg] = (uint8_t)(rand() & val);
 }
 
 void draw_sprite(sdl_t *sdl, Chip8 *cpu, uint8_t regA, uint8_t regB, uint8_t val) {
@@ -118,7 +118,7 @@ void draw_sprite(sdl_t *sdl, Chip8 *cpu, uint8_t regA, uint8_t regB, uint8_t val
 	uint8_t y_loc = cpu->V[regB] % 32;
 	
 	// set VF to 0
-	cpu->V[0xE] = 0;
+	cpu->V[0xF] = 0;
 
 	uint8_t sprite_data[5];
 	for (int i = 0; i < val; i++) {
@@ -129,12 +129,11 @@ void draw_sprite(sdl_t *sdl, Chip8 *cpu, uint8_t regA, uint8_t regB, uint8_t val
 		// get the sprite row
 		sprite_data[i] = cpu->memory[cpu->I + i];
 		for (int j = 0; j < 8; j++) {
-			// extract bits from MSB -> LSB using cursed logic
 			bool bit = (sprite_data[i] >> (7-j)) & 1;
 
 			// if bit is on, and pixel is also on set VF to 1
 			if (bit == true && sdl->display[y_loc][x_loc].active == true) {
-				cpu->V[0xE] = 1;
+				cpu->V[0xF] = 1;
 				sdl->display[y_loc][x_loc].active = false;
 
 			// if bit is on bit pixel is not, turn pixel on
@@ -215,7 +214,7 @@ void bcd(Chip8 *cpu, uint8_t reg) {
 void reg_dump(Chip8 *cpu, uint8_t reg) {
 	uint16_t i = cpu->I;
 	
-	for (int x = 0; x < reg; x++) {
+	for (int x = 0; x <= reg; x++) {
 		cpu->memory[i + x] = cpu->V[x];
 	}
 }
@@ -223,7 +222,7 @@ void reg_dump(Chip8 *cpu, uint8_t reg) {
 void reg_load(Chip8 *cpu, uint8_t reg) {
 	uint16_t i = cpu->I;
 
-	for (int x = 0; x < reg; x++) {
+	for (int x = 0; x <= reg; x++) {
 		cpu->V[x] = cpu->memory[i + x];
 	}
 }
