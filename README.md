@@ -8,26 +8,26 @@ CHIP-8: https://en.wikipedia.org/wiki/CHIP-8
 ## Linux
 
 ##### Clone the repo
-
-`git clone https://github.com/Colemakman/CHIP-8/`
-
+```bash
+git clone https://github.com/Colemakman/CHIP-8/
+```
 ##### Install dependancies
 
 Debian based systems  
-`sudo apt install gcc libsdl2-dev`
-
+```bash
+sudo apt install gcc libsdl2-dev
+```
 ##### Build
 
 Build emulator  
-`make`
-
-Build disassembler  
-`make dis`
-
+```bash
+make
+```
 ##### Run
 
-`./chip8 example.ch8`
-
+```bash
+./chip8 example.ch8
+```
 
 ## Windows
 
