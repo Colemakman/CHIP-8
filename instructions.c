@@ -15,8 +15,8 @@ void disp_clear(sdl_t *sdl) {
 }
 
 void return_from_sub(Chip8 *cpu) {
-	cpu->PC = cpu->stack[cpu->SP];
-	cpu->stack[cpu->SP] = 0; 
+	cpu->PC = cpu->stack[cpu->SP-1];
+	cpu->stack[cpu->SP-1] = 0; 
 	cpu->SP -= 1;
 }
 
@@ -26,7 +26,7 @@ void jump_addr(Chip8 *cpu, uint16_t addr) {
 
 void call(Chip8 *cpu, uint16_t addr) {
 	cpu->SP += 1;	
-	cpu->stack[cpu->SP] = cpu->PC;
+	cpu->stack[cpu->SP-1] = cpu->PC;
 	cpu->PC = addr;
 }
 

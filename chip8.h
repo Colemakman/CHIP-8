@@ -45,6 +45,6 @@ void set_pixel(sdl_t *sdl, int x, int y, bool value);
 void draw_graphics(sdl_t *sdl);
 void final_cleanup(sdl_t sdl);
 void print_memory(Chip8 *cpu);
-uint16_t fetch(Chip8 *cpu);
+uint16_t fetch(Chip8 *cpu, bool debug);
 
 #endif

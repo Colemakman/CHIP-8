@@ -34,11 +34,15 @@ int init_sdl(sdl_t *sdl) {
 }
 
 void init_cpu(Chip8 *cpu, const char *file_name) {
+	cpu->SP = 0;
+	cpu->PC = 0x200;
+	
+	for (int i = 0; i < 4096; i++) {
+		cpu->memory[i] = 0x0000;
+	}
+
 	load_font_into_memory(cpu);
 	load_game_into_memory(cpu, file_name);
-	
-	cpu->SP = -1;
-	cpu->PC = 0x200;
 }
 
 void load_game_into_memory(Chip8 *cpu, const char *file_name) {
@@ -48,10 +52,19 @@ void load_game_into_memory(Chip8 *cpu, const char *file_name) {
 		return;
 	}
 
+	char *buffer;
+	long filelen;
+
+	fseek(file, 0, SEEK_END);
+	filelen = ftell(file);
+	rewind(file);
+
+	buffer = (char *)malloc(filelen * sizeof(char));
+	fread(buffer, filelen, 1, file);
+
 	uint16_t addr = 0x200;
-	uint8_t byte;
-	while (fread(&byte, sizeof(uint8_t), 1, file) == 1 && addr < 4096) { 
-		cpu->memory[addr++] = (byte << 4) | (byte >> 4);
+	for (int i = 0; i < filelen; i++) {
+		cpu->memory[addr + i] = buffer[i]; 
 	}
 	print_memory(cpu);
 
@@ -128,23 +141,19 @@ void final_cleanup(sdl_t sdl) {
 }
 
 void print_memory(Chip8 *cpu) {
-	bool skip = false;
-	for (int i = 0x200; i < 0x400; i++) {
-		printf("%02x", cpu->memory[i]);
-		if (skip) {
-			printf("\n"); 
-		}
-		skip = !skip;
+	for (int i = 0x200; i < 4096 - 0x200; i++) {
+		printf("%d: %02x    ", i, cpu->memory[i]);
 	}
 }
 
-uint16_t fetch(Chip8 *cpu) {
+uint16_t fetch(Chip8 *cpu, bool debug) {
 	uint8_t left = cpu->memory[cpu->PC];
 	uint8_t right = cpu->memory[cpu->PC + 1];
 	
-	uint16_t instr = (right << 4) | (left >> 4); 
+	uint16_t instr = (left << 8) | right;
 	cpu->PC += 2;
 
+	if (!debug) printf("Instruction: %04x\n", instr);
 	return instr;
 }
 
@@ -153,6 +162,10 @@ void decode_execute(Chip8 *cpu, sdl_t *sdl, uint16_t instr) {
 	uint8_t second_nib = (instr >> 2) & 0x03;
 	uint8_t third_nib =  (instr >> 1) & 0x01;
 	uint8_t fourth_nib = (instr >> 0) & 0x0F;
+
+	if (first_nib == 0xD) {
+		printf("Nibs: %x %x %x %x\n", first_nib, second_nib, third_nib, fourth_nib);
+	}
 
 	uint16_t val234nib = (second_nib << 8) | (third_nib << 4) | fourth_nib;
 	uint8_t val34nib = (third_nib << 4) | fourth_nib;
@@ -166,7 +179,7 @@ void decode_execute(Chip8 *cpu, sdl_t *sdl, uint16_t instr) {
 			switch (fourth_nib) {
 				case 0x0: disp_clear(sdl); break;
 				case 0xE: return_from_sub(cpu); break;
-				default: printf("UNKNOWN COMMAND"); break;
+				default: printf("UNKNOWN COMMAND: %04x\n", instr); break;
 			}
 			break;
 		case 0x1: jump_addr(cpu, val234nib); break;
@@ -187,7 +200,7 @@ void decode_execute(Chip8 *cpu, sdl_t *sdl, uint16_t instr) {
 				case 0x6: r_shift_reg(cpu, second_nib); break;
 				case 0x7: diff_reg(cpu, second_nib, third_nib); break;
 				case 0xE: l_shift_reg(cpu, second_nib); break;
-				default: printf("UNKNOWN COMMAND"); break;
+				default: printf("UNKNOWN COMMAND: %04x\n", instr); break;
 			}
 			break;
 		}
@@ -200,7 +213,7 @@ void decode_execute(Chip8 *cpu, sdl_t *sdl, uint16_t instr) {
 			switch (fourth_nib) {
 				case 0xE: skip_if_pressed(sdl, cpu, second_nib); break;
 				case 0x1: skip_if_not_pressed(sdl, cpu, second_nib); break;
-				default: printf("UNKNOWN COMMAND"); break;
+				default: printf("UNKNOWN COMMAND: %04x\n", instr); break;
 			}
 			break;
 		}
@@ -217,33 +230,47 @@ void decode_execute(Chip8 *cpu, sdl_t *sdl, uint16_t instr) {
 						case 0x1: set_delay(cpu, second_nib); break;
 						case 0x5: reg_dump(cpu, second_nib); break;
 						case 0x6: reg_load(cpu, second_nib); break;
-						default: printf("UNKNOWN COMMAND"); break;
+						default: printf("UNKNOWN COMMAND: %04x\n", instr); break;
 					}
 					break;
 				}
-				default: printf("UNKNOWN COMMAND"); break;
+				default: printf("UNKNOWN COMMAND: %04x\n", instr); break;
 			}
 			break;
-		default: printf("UNKNOWN COMMAND"); break;
+		default: printf("UNKNOWN COMMAND: %04x\n", instr); break;
 		}
 	}
 }
 
 int main(int argc, char *argv[]) {
-	Chip8 cpu;
+	Chip8 cpu = {
+		.I = 0,
+		.SP = 0,
+		.PC = 0x200,
+		.delay = 0,
+		.sound = 0,
+	};
+
 	sdl_t sdl;
 
-	if (argc != 2) {
+	if ((argc != 2) && (argc != 3)) {
 		printf("Usage: ./chip8 <FILENAME>");
 		return EXIT_FAILURE;
 	}
 
+	bool debug = false;
+	if ((argc == 3) && ((strcmp(argv[2], "-d") == 0) || (strcmp(argv[2], "--debug") == 0))) {
+		debug = true;
+	}
+
 	const char* file_name = argv[1];
 
-	initscr();
-	cbreak();
-	noecho();
-	keypad(stdscr, TRUE);
+	if (debug) {
+		initscr();
+		cbreak();
+		noecho();
+		keypad(stdscr, TRUE);
+	}
 
 	init_cpu(&cpu, file_name);
 	init_sdl(&sdl);
@@ -253,7 +280,7 @@ int main(int argc, char *argv[]) {
 	int quit = 0;
 	while (!quit) {
 
-		uint16_t instr = fetch(&cpu);
+		uint16_t instr = fetch(&cpu, debug);
 		decode_execute(&cpu, &sdl, instr);
 
 		draw_graphics(&sdl);
@@ -261,7 +288,6 @@ int main(int argc, char *argv[]) {
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
 				case SDL_QUIT: quit = 1; break;
-				default: printf("Unknown"); break;
 			}
 			handle_key_press(&sdl, event);
 		}
@@ -276,12 +302,14 @@ int main(int argc, char *argv[]) {
 		// 60hz = 16.6666... ms, but SDL_Delay takes uint values only
 		SDL_Delay(17);
 		//disassemble_chip8_op(instr);
-		printw("%04x\n", instr);
-		refresh();
-		getch();
 
+		if (debug) {
+			printw("%04x, PC: %04x, SP: %04x, I: %04x, delay: %04x, sound: %04x\n", instr, cpu.PC, cpu.SP, cpu.I, cpu.delay, cpu.sound);
+			refresh();
+			getch();
+		}
 	}
 	
-	endwin();
+	if (debug) endwin();
 	final_cleanup(sdl);
 }
