@@ -15,13 +15,11 @@ git clone https://github.com/Colemakman/CHIP-8/
 ```
 ##### Install dependancies
 
-Debian based systems  
 ```bash
 sudo apt install gcc libsdl2-dev
 ```
 ##### Build
 
-Build emulator  
 ```bash
 make
 ```
@@ -32,8 +30,6 @@ make
 ```
 
 ## Windows
-
-Quite a bit more involved for Windows.
 
 ##### Install dependancies
 
