@@ -66,7 +66,7 @@ void load_game_into_memory(Chip8 *cpu, const char *file_name) {
 	for (int i = 0; i < filelen; i++) {
 		cpu->memory[addr + i] = buffer[i]; 
 	}
-	print_memory(cpu);
+	// print_memory(cpu);
 
 	fclose(file);
 }
@@ -158,10 +158,10 @@ uint16_t fetch(Chip8 *cpu, bool debug) {
 }
 
 void decode_execute(Chip8 *cpu, sdl_t *sdl, uint16_t instr) {
-	uint8_t first_nib =  (instr >> 4) & 0x0F;
-	uint8_t second_nib = (instr >> 2) & 0x03;
-	uint8_t third_nib =  (instr >> 1) & 0x01;
-	uint8_t fourth_nib = (instr >> 0) & 0x0F;
+	uint8_t first_nib =  (instr >> 12) & 0xF;
+	uint8_t second_nib = (instr >>  8) & 0xF;
+	uint8_t third_nib =  (instr >>  4) & 0xF;
+	uint8_t fourth_nib = (instr >>  0) & 0xF;
 
 	if (first_nib == 0xD) {
 		printf("Nibs: %x %x %x %x\n", first_nib, second_nib, third_nib, fourth_nib);
@@ -307,6 +307,7 @@ int main(int argc, char *argv[]) {
 			printw("%04x, PC: %04x, SP: %04x, I: %04x, delay: %04x, sound: %04x\n", instr, cpu.PC, cpu.SP, cpu.I, cpu.delay, cpu.sound);
 			refresh();
 			getch();
+			set_i(&cpu, 0xF1F);
 		}
 	}
 	

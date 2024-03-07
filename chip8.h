@@ -25,6 +25,7 @@ typedef struct {
 
 typedef struct {
 	SDL_Rect rect;
+	// SDL_Rect border;
 	bool active;
 } pixel_t;
 

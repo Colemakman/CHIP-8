@@ -120,7 +120,6 @@ void draw_sprite(sdl_t *sdl, Chip8 *cpu, uint8_t regA, uint8_t regB, uint8_t val
 	// set VF to 0
 	cpu->V[0xE] = 0;
 
-	uint16_t index = cpu->I;
 	uint8_t sprite_data[5];
 	for (int i = 0; i < val; i++) {
 
@@ -128,10 +127,10 @@ void draw_sprite(sdl_t *sdl, Chip8 *cpu, uint8_t regA, uint8_t regB, uint8_t val
 		uint8_t x_loc = cpu->V[regA] % 64;
 
 		// get the sprite row
-		sprite_data[i] = cpu->memory[index + i];
+		sprite_data[i] = cpu->memory[cpu->I + i];
 		for (int j = 0; j < 8; j++) {
 			// extract bits from MSB -> LSB using cursed logic
-			bool bit = sprite_data[i] & (uint8_t)pow(2, 7 - j);
+			bool bit = (sprite_data[i] >> (7-j)) & 1;
 
 			// if bit is on, and pixel is also on set VF to 1
 			if (bit == true && sdl->display[y_loc][x_loc].active == true) {
