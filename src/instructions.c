@@ -120,7 +120,7 @@ void draw_sprite(sdl_t *sdl, Chip8 *cpu, uint8_t regA, uint8_t regB, uint8_t val
 	// set VF to 0
 	cpu->V[0xF] = 0;
 
-	uint8_t sprite_data[5];
+	uint8_t sprite_data[16];
 	for (int i = 0; i < val; i++) {
 
 		// reset x to left
