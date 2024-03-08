@@ -31,7 +31,7 @@ make
 
 ## Windows
 
-Do the same steps but on WSL.
-https://learn.microsoft.com/en-us/windows/wsl/install
-You may need to `sudo apt install make ncurses-dev`
+Do the same steps but on WSL.  
+https://learn.microsoft.com/en-us/windows/wsl/install  
+You may need to `sudo apt install make ncurses-dev`  
 
